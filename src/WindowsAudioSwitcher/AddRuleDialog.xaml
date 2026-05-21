@@ -1,0 +1,208 @@
+<ui:FluentWindow x:Class="WindowsAudioSwitcher.AddRuleDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="Add rule"
+                 Width="560" Height="660"
+                 MinWidth="520" MinHeight="560"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 WindowStartupLocation="CenterOwner"
+                 ShowInTaskbar="False"
+                 Icon="pack://application:,,,/Assets/app.ico">
+
+    <ui:FluentWindow.Resources>
+        <!-- Same elevated-card row style the main window uses for rule items. -->
+        <Style x:Key="AddRuleDeviceItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource SurfaceElevatedBrush}"
+                                BorderBrush="{StaticResource BorderBrushSubtle}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#FF2A2A2A"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{StaticResource AccentBlueBrush}"/>
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{StaticResource SurfaceElevatedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" x:Name="TitleBar"
+                     ShowMaximize="False"
+                     ShowMinimize="False">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/app.ico"/>
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <DockPanel Grid.Row="1" Margin="20,8,20,16" LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top"
+                       x:Name="IntroText"
+                       Text="Pick a connected device, or match any future device by part of its name."
+                       Margin="0,0,0,16"
+                       TextWrapping="Wrap"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+
+            <StackPanel DockPanel.Dock="Bottom"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+                <ui:Button x:Name="OkButton"
+                           Content="Add rule"
+                           Appearance="Primary"
+                           Width="110"
+                           IsDefault="True"
+                           IsEnabled="False"
+                           Click="OkBtn_Click"/>
+                <ui:Button Content="Cancel"
+                           Appearance="Secondary"
+                           Width="92"
+                           IsCancel="True"
+                           Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- Exact-device picker (gets the leftover space) -->
+                    <RowDefinition Height="*"/>
+                    <!-- "OR" separator -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Name-match section -->
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- ===== EXACT DEVICE ===== -->
+                <DockPanel Grid.Row="0" LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border CornerRadius="9"
+                                Padding="9,2"
+                                Background="{StaticResource AccentBlueBrush}"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="EXACT"
+                                       Foreground="White"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Text="Pin a specific device that's connected right now."
+                                   Margin="10,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               x:Name="DeviceEmptyText"
+                               Text="No connected devices in this category."
+                               Margin="0,4,0,0"
+                               FontSize="12"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Visibility="Collapsed"/>
+                    <Border Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrushStrong}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="6">
+                        <ListBox x:Name="DeviceList"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 DisplayMemberPath="FriendlyName"
+                                 ItemContainerStyle="{StaticResource AddRuleDeviceItemStyle}"
+                                 SelectionChanged="DeviceList_SelectionChanged"
+                                 MouseDoubleClick="DeviceList_DoubleClick"/>
+                    </Border>
+                </DockPanel>
+
+                <!-- ===== OR SEPARATOR ===== -->
+                <!-- Two short lines flanking the label, instead of one masked line, so
+                     it renders correctly over the Mica-transparent window body. -->
+                <Grid Grid.Row="1" Margin="0,16,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Background="{StaticResource BorderBrushSubtle}"
+                            Height="1"
+                            VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1"
+                               Text="OR"
+                               Padding="12,0"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center"/>
+                    <Border Grid.Column="2"
+                            Background="{StaticResource BorderBrushSubtle}"
+                            Height="1"
+                            VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- ===== NAME MATCH ===== -->
+                <StackPanel Grid.Row="2">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border CornerRadius="9"
+                                Padding="9,2"
+                                Background="{StaticResource AccentPurpleBrush}"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="NAME MATCH"
+                                       Foreground="White"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Text="Match any device whose friendly name contains your text."
+                                   Margin="10,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="Case-insensitive substring match. Useful when the same headset gets a new endpoint after every reconnect (common for Bluetooth)."
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Example: &quot;Sony&quot; matches &quot;Sony WH-1000XM4&quot;, &quot;Sony WF-1000XM5&quot;…"
+                               FontSize="11"
+                               FontStyle="Italic"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,0,0,8"/>
+                    <ui:TextBox x:Name="NameInput"
+                                Padding="8,6"
+                                FontSize="13"
+                                PlaceholderText="e.g. Sony"
+                                TextChanged="NameInput_TextChanged"
+                                GotKeyboardFocus="NameInput_GotKeyboardFocus"/>
+                </StackPanel>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</ui:FluentWindow>

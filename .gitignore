@@ -1,0 +1,44 @@
+## .NET / Visual Studio
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.pdb
+*.cache
+*.tmp
+*.log
+*.swp
+*.swo
+*.bak
+*.lscache
+
+# Publish output
+publish/
+dist/
+*.pubxml
+*.pubxml.user
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+
+# Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

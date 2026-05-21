@@ -1,0 +1,42 @@
+<Application x:Class="WindowsAudioSwitcher.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Dark"/>
+                <ui:ControlsDictionary/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Canonical dark palette. The Surface tones are intentionally translucent
+                 over near-black so Mica peeks through subtly without picking up the
+                 user's Windows accent color as a wash. ToastWindow uses its own opaque
+                 dark fill because it has no Mica backdrop. -->
+            <Color x:Key="SurfaceColor">#33000000</Color>
+            <Color x:Key="SurfaceElevatedColor">#FF202020</Color>
+            <Color x:Key="BorderColor">#1AFFFFFF</Color>
+            <Color x:Key="BorderSubtleColor">#10FFFFFF</Color>
+            <Color x:Key="TextPrimaryColor">#FFE5E7EB</Color>
+            <Color x:Key="TextSecondaryColor">#FFCBD5E1</Color>
+            <Color x:Key="TextMutedColor">#FF94A3B8</Color>
+            <Color x:Key="AccentBlueColor">#FF3B82F6</Color>
+            <Color x:Key="AccentPurpleColor">#FFA855F7</Color>
+            <Color x:Key="StatusGoodColor">#FF10B981</Color>
+            <Color x:Key="StatusWarnColor">#FFF59E0B</Color>
+
+            <SolidColorBrush x:Key="SurfaceBrush"         Color="{StaticResource SurfaceColor}"/>
+            <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}"/>
+            <SolidColorBrush x:Key="BorderBrushStrong"    Color="{StaticResource BorderColor}"/>
+            <SolidColorBrush x:Key="BorderBrushSubtle"    Color="{StaticResource BorderSubtleColor}"/>
+            <SolidColorBrush x:Key="TextPrimaryBrush"     Color="{StaticResource TextPrimaryColor}"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush"   Color="{StaticResource TextSecondaryColor}"/>
+            <SolidColorBrush x:Key="TextMutedBrush"       Color="{StaticResource TextMutedColor}"/>
+            <SolidColorBrush x:Key="AccentBlueBrush"      Color="{StaticResource AccentBlueColor}"/>
+            <SolidColorBrush x:Key="AccentPurpleBrush"    Color="{StaticResource AccentPurpleColor}"/>
+            <SolidColorBrush x:Key="StatusGoodBrush"      Color="{StaticResource StatusGoodColor}"/>
+            <SolidColorBrush x:Key="StatusWarnBrush"      Color="{StaticResource StatusWarnColor}"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
