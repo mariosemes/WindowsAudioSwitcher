@@ -1,0 +1,534 @@
+<ui:FluentWindow x:Class="WindowsAudioSwitcher.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="Windows Audio Switcher"
+                 Width="960" Height="700"
+                 MinWidth="800" MinHeight="560"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 WindowStartupLocation="CenterScreen"
+                 Icon="pack://application:,,,/Assets/app.ico">
+    <ui:FluentWindow.Resources>
+
+        <!-- Card-row container style for the rule list. Removes ListBoxItem's
+             default highlight chrome and replaces with our own elevated card. -->
+        <Style x:Key="RuleItemContainerStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="8,3"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- 4-way move arrow advertises that the row is draggable. Interactive
+                 children (ToggleSwitch, remove button) override back to Arrow. -->
+            <Setter Property="Cursor" Value="SizeAll"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource SurfaceElevatedBrush}"
+                                BorderBrush="{StaticResource BorderBrushSubtle}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#FF2A2A2A"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{StaticResource AccentBlueBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Single rule row: drag handle | type chip | display text | toggle | edit (✎) | remove (✕). -->
+        <DataTemplate x:Key="RuleItemTemplate">
+            <Grid MinHeight="36">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="⠿"
+                           FontSize="14"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,0,10,0"
+                           VerticalAlignment="Center"
+                           ToolTip="Drag to reorder">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Opacity" Value="0.45"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
+                                    <Setter Property="Opacity" Value="1.0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Border Grid.Column="1"
+                        CornerRadius="9"
+                        Padding="9,2"
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource AccentBlueBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Kind}" Value="NameContains">
+                                    <Setter Property="Background" Value="{StaticResource AccentPurpleBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                    <Setter Property="Opacity" Value="0.4"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Foreground="White"
+                               FontSize="10"
+                               FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="EXACT"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="NameContains">
+                                        <Setter Property="Text" Value="NAME MATCH"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding DisplayText}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           FontSize="13">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                                    <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ui:ToggleSwitch Grid.Column="3"
+                                 IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center"
+                                 Margin="8,0,4,0"
+                                 Cursor="Arrow"
+                                 ToolTip="Enable / disable this rule"/>
+
+                <ui:Button Grid.Column="4"
+                           Appearance="Transparent"
+                           Padding="6,2"
+                           Margin="2,0,0,0"
+                           VerticalAlignment="Center"
+                           Cursor="Arrow"
+                           Tag="{Binding}"
+                           Click="RuleEditBtn_Click"
+                           ToolTip="Edit rule">
+                    <TextBlock Text="✎"
+                               FontSize="13"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                </ui:Button>
+
+                <ui:Button Grid.Column="5"
+                           Appearance="Transparent"
+                           Padding="6,2"
+                           Margin="2,0,0,0"
+                           VerticalAlignment="Center"
+                           Cursor="Arrow"
+                           Tag="{Binding}"
+                           Click="RuleRemoveBtn_Click"
+                           ToolTip="Remove rule">
+                    <TextBlock Text="✕"
+                               FontSize="13"
+                               Foreground="{StaticResource TextMutedBrush}"/>
+                </ui:Button>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Reusable card chrome for the two column panes and the two header tiles. -->
+        <Style x:Key="SurfaceCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushStrong}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- WPF UI's TitleBar.Header renders next to the caption buttons (right-side),
+             which threw the version label across the bar. Use a Grid so the
+             TitleBar still handles drag + caption buttons normally underneath,
+             and overlay our own version TextBlock at the left, right after where
+             the TitleBar's built-in Title text ends. IsHitTestVisible=False so
+             clicks/drag still go to the TitleBar. -->
+        <Grid Grid.Row="0">
+            <ui:TitleBar x:Name="AppTitleBar"
+                         Title="Windows Audio Switcher"
+                         ShowMaximize="True">
+                <ui:TitleBar.Icon>
+                    <ui:ImageIcon Source="pack://application:,,,/Assets/app.ico"/>
+                </ui:TitleBar.Icon>
+            </ui:TitleBar>
+            <TextBlock x:Name="AppTitleBarVersion"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Margin="180,0,0,0"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       Opacity="0.6"
+                       FontSize="12"
+                       IsHitTestVisible="False"/>
+        </Grid>
+
+        <!-- Update-available banner. Collapsed until UpdateChecker finds a newer release.
+             Two visual states: idle (Update / Dismiss) and downloading (progress + Cancel). -->
+        <Border x:Name="UpdateBanner"
+                Grid.Row="1"
+                Background="{StaticResource SurfaceElevatedBrush}"
+                BorderBrush="{StaticResource AccentBlueBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Margin="20,8,20,0"
+                Padding="12,10"
+                Visibility="Collapsed">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Background="{StaticResource AccentBlueBrush}"
+                            CornerRadius="4"
+                            Width="28" Height="28"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="↓"
+                                   Foreground="White"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="UpdateBannerTitle"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Text="Update available"/>
+                        <TextBlock x:Name="UpdateBannerMessage"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <ui:Button Grid.Column="2"
+                               x:Name="UpdateInstallBtn"
+                               Content="Update"
+                               Appearance="Primary"
+                               Padding="14,4"
+                               Margin="0,0,6,0"
+                               Click="UpdateInstallBtn_Click"/>
+                    <ui:Button Grid.Column="3"
+                               x:Name="UpdateCancelBtn"
+                               Content="Cancel"
+                               Appearance="Secondary"
+                               Padding="14,4"
+                               Margin="0,0,6,0"
+                               Visibility="Collapsed"
+                               Click="UpdateCancelBtn_Click"/>
+                    <ui:Button Grid.Column="4"
+                               x:Name="UpdateDismissBtn"
+                               Appearance="Transparent"
+                               Padding="6,2"
+                               Click="UpdateDismissBtn_Click"
+                               ToolTip="Dismiss for now">
+                        <TextBlock Text="✕"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextMutedBrush}"/>
+                    </ui:Button>
+                </Grid>
+                <ProgressBar x:Name="UpdateProgressBar"
+                             Minimum="0"
+                             Maximum="100"
+                             Height="4"
+                             Margin="0,10,0,0"
+                             Visibility="Collapsed"
+                             Background="{StaticResource BorderBrushSubtle}"
+                             Foreground="{StaticResource AccentBlueBrush}"
+                             BorderThickness="0"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="20,4,20,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Currently routing header (two tiles) -->
+            <Grid Grid.Row="0" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Grid.Column="0"
+                                 Width="10" Height="10"
+                                 Fill="{StaticResource StatusGoodBrush}"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="OUTPUT"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="OutCurrentText"
+                                       Text="(unknown)"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Margin="0,2,0,0"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource SurfaceCardStyle}" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Grid.Column="0"
+                                 Width="10" Height="10"
+                                 Fill="{StaticResource StatusGoodBrush}"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="INPUT"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="InCurrentText"
+                                       Text="(unknown)"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Margin="0,2,0,0"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Section heading -->
+            <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                <TextBlock Text="Priority rules"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock Text="The first enabled rule whose match is connected wins. Drag rows to reorder. Toggle off to disable without removing."
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,0"
+                           Foreground="{StaticResource TextMutedBrush}"/>
+            </StackPanel>
+
+            <!-- Two-column rule panes -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Output column -->
+                <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Padding="16,12,16,10">
+                            <TextBlock Text="Output (speakers / headphones)"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Border>
+
+                        <Border DockPanel.Dock="Bottom" Padding="12,8,12,12">
+                            <ui:Button x:Name="OutAddBtn"
+                                       Content="+ Add device"
+                                       Appearance="Secondary"
+                                       HorizontalAlignment="Stretch"
+                                       HorizontalContentAlignment="Center"
+                                       Click="OutAddBtn_Click"/>
+                        </Border>
+
+                        <Grid>
+                            <ListBox x:Name="OutList"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemTemplate="{StaticResource RuleItemTemplate}"
+                                     ItemContainerStyle="{StaticResource RuleItemContainerStyle}"
+                                     AllowDrop="True"
+                                     PreviewMouseLeftButtonDown="RulesListBox_PreviewMouseLeftButtonDown"
+                                     PreviewMouseMove="RulesListBox_PreviewMouseMove"
+                                     DragOver="RulesListBox_DragOver"
+                                     Drop="RulesListBox_Drop"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                            <TextBlock x:Name="OutEmptyText"
+                                       Text="No rules yet.&#10;Click + Add device to get started."
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="12"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+                <!-- Input column -->
+                <Border Grid.Column="2" Style="{StaticResource SurfaceCardStyle}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Padding="16,12,16,10">
+                            <TextBlock Text="Input (microphones)"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Border>
+
+                        <Border DockPanel.Dock="Bottom" Padding="12,8,12,12">
+                            <ui:Button x:Name="InAddBtn"
+                                       Content="+ Add device"
+                                       Appearance="Secondary"
+                                       HorizontalAlignment="Stretch"
+                                       HorizontalContentAlignment="Center"
+                                       Click="InAddBtn_Click"/>
+                        </Border>
+
+                        <Grid>
+                            <ListBox x:Name="InList"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemTemplate="{StaticResource RuleItemTemplate}"
+                                     ItemContainerStyle="{StaticResource RuleItemContainerStyle}"
+                                     AllowDrop="True"
+                                     PreviewMouseLeftButtonDown="RulesListBox_PreviewMouseLeftButtonDown"
+                                     PreviewMouseMove="RulesListBox_PreviewMouseMove"
+                                     DragOver="RulesListBox_DragOver"
+                                     Drop="RulesListBox_Drop"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                            <TextBlock x:Name="InEmptyText"
+                                       Text="No rules yet.&#10;Click + Add device to get started."
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="12"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <!-- InfoBar: surfaces on save / apply / error. Otherwise collapsed. -->
+            <ui:InfoBar Grid.Row="3"
+                        x:Name="StatusInfoBar"
+                        Margin="0,14,0,0"
+                        IsClosable="True"
+                        IsOpen="False"
+                        Severity="Informational"/>
+
+            <!-- Settings strip -->
+            <Grid Grid.Row="4" Margin="0,14,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ui:ToggleSwitch Grid.Column="0"
+                                 x:Name="RunOnStartupCheck"
+                                 Content="Run on Windows startup"
+                                 VerticalAlignment="Center"
+                                 Checked="SettingsToggle_Changed"
+                                 Unchecked="SettingsToggle_Changed"/>
+
+                <ui:ToggleSwitch Grid.Column="1"
+                                 x:Name="StartMinimizedCheck"
+                                 Content="Start minimized to tray"
+                                 Margin="24,0,0,0"
+                                 VerticalAlignment="Center"
+                                 Checked="SettingsToggle_Changed"
+                                 Unchecked="SettingsToggle_Changed"/>
+
+                <ui:Button Grid.Column="3"
+                           x:Name="ApplyNowBtn"
+                           Content="Apply now"
+                           Appearance="Secondary"
+                           Padding="16,6"
+                           Click="ApplyNowBtn_Click"/>
+
+                <ui:Button Grid.Column="4"
+                           Content="Close"
+                           Appearance="Transparent"
+                           Margin="8,0,0,0"
+                           Padding="16,6"
+                           Click="CloseBtn_Click"/>
+            </Grid>
+
+        </Grid>
+    </Grid>
+</ui:FluentWindow>
