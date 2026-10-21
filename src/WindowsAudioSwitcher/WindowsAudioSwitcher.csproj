@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <RootNamespace>WindowsAudioSwitcher</RootNamespace>
+    <AssemblyName>WindowsAudioSwitcher</AssemblyName>
+    <!-- Versioning. release.ps1 overrides these via -p:Version=x.y.z when
+         publishing, AND auto-bumps this <Version> in csproj after a successful
+         release so dev builds always reflect the most recently shipped version. -->
+    <Version>0.7.1</Version>
+    <!-- Assembly/file versions must be purely numeric, so strip any pre-release
+         or build suffix: a <Version> of 0.7.0-rc1 yields 0.7.0.0. -->
+    <NumericVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(Version)', '[-+].*$', ''))</NumericVersion>
+    <AssemblyVersion>$(NumericVersion).0</AssemblyVersion>
+    <FileVersion>$(NumericVersion).0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <!-- Product metadata shown in Apps & Features / file properties -->
+    <Product>Windows Audio Switcher</Product>
+    <Company>WindowsAudioSwitcher</Company>
+    <Copyright>Copyright © $([System.DateTime]::UtcNow.Year)</Copyright>
+    <Description>Automatic Windows default-audio device switcher.</Description>
+  </PropertyGroup>
+  <!-- Single-file self-contained publish defaults. Override on the CLI if needed. -->
+  <PropertyGroup Condition="'$(PublishProfile)' == 'Installer'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.3.2" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Lets the tests reach internal parsing helpers (UpdateChecker.ParseRelease,
+         SettingsStore path overloads, UpdateUrls) without making them public. -->
+    <InternalsVisibleTo Include="WindowsAudioSwitcher.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- WPF Resource: lets MainWindow.Icon resolve pack://application:,,,/Assets/app.ico -->
+    <Resource Include="Assets\app.ico" />
+    <!-- Plain manifest resource: works in single-file publish where
+         Application.GetResourceStream sometimes silently returns null. -->
+    <EmbeddedResource Include="Assets\app.ico">
+      <LogicalName>WindowsAudioSwitcher.Assets.app.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

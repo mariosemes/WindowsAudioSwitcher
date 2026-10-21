@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore WindowsAudioSwitcher.sln
+
+      - name: Build
+        run: dotnet build WindowsAudioSwitcher.sln -c Release --no-restore -warnaserror
+
+      - name: Test
+        run: dotnet test WindowsAudioSwitcher.sln -c Release --no-build --logger "console;verbosity=normal"
